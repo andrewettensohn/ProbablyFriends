@@ -13,7 +13,7 @@ namespace ProbablyFriends.Tests
 
             List<string> friendNames = indexModel.GetFriendNames();
 
-            Assert.True(friendNames.Count == 3);
+            Assert.True(friendNames.Count == 2);
         }
     }
 }
