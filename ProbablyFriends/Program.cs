@@ -8,6 +8,8 @@ var options = new WebApplicationOptions
 
 var builder = WebApplication.CreateBuilder(options);
 
+builder.Host.UseWindowsService();
+
 // Add services to the container.
 builder.Services.AddRazorPages();
 
@@ -31,5 +33,3 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 app.Run();
-
-builder.Host.UseWindowsService();
