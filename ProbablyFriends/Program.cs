@@ -22,5 +22,5 @@ app.UseAuthorization();
 
 app.MapRazorPages();
 
-app.Run("http://localhost:6054");
+app.Run();
 
