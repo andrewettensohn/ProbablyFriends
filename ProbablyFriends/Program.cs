@@ -1,4 +1,12 @@
-var builder = WebApplication.CreateBuilder(args);
+using Microsoft.Extensions.Hosting.WindowsServices;
+
+var options = new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = WindowsServiceHelpers.IsWindowsService() ? AppContext.BaseDirectory : default
+};
+
+var builder = WebApplication.CreateBuilder(options);
 
 // Add services to the container.
 builder.Services.AddRazorPages();
@@ -23,3 +31,5 @@ app.UseAuthorization();
 app.MapRazorPages();
 
 app.Run();
+
+builder.Host.UseWindowsService();
