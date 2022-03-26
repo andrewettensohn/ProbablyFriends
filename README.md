@@ -1,8 +1,55 @@
 # ProbablyFriends
+This is an example project that is used with a Jenkins pipeline I setup. Thanks for checking it out!
 
-This is an example project that is used by a Jenkins pipeline I setup. 
+## Overview
+
+The details of the Jenkins pipeline are documented in this readme along with steps to recreate the work I've done. This repository contains a simple ASP .NET 6 web application with Razor pages and a unit test project. The configuration for the Jenkins pipeline is listed below as an XML code block along with a deployment script written in Python.
+
+## Setting up the .NET Project
+
+From Visual Studio 2022 I created a new ASP .NET Core Web App project and selected .NET 6.0 for the framework.
+
+![image](https://user-images.githubusercontent.com/47993107/160245939-16f82c06-d401-4c9b-9c32-4ef0c7f44fb8.png)
+
+![image](https://user-images.githubusercontent.com/47993107/160245977-1d79a834-9ca0-4f0b-b507-7ecb3169e6d3.png)
+
+I wanted to showcase running unit tests as a build step in the pipeline, so I added a unit test project as well.
+
+![image](https://user-images.githubusercontent.com/47993107/160246164-55223456-348c-4a56-8ae4-c7db96c3650f.png)
+
+Within Index.cshtml.cs I wrote a very simple method that returns a list of three names:
+
+```C#
+  public List<string> GetFriendNames()
+  {
+      return new List<string> { "Matt", "Michael", "Andrew" };
+  }
+```
+In order to test this method, I wrote a single unit test that checks that the method really does return three names:
+
+```C#
+  [Fact]
+  public void AreThreeFriendNamesReturned_GetFriendNames()
+  {
+      IndexModel indexModel = new IndexModel();
+
+      List<string> friendNames = indexModel.GetFriendNames();
+
+      Assert.True(friendNames.Count == 3);
+  }
+```
+Before heading over to Jenkins, I set the project up in source control by selecting the "Add to Source Control" option and creating a public repository on GitHub.
+
+![image](https://user-images.githubusercontent.com/47993107/160246383-6def832f-4178-4d53-aac2-bd6fbe2c0552.png)
+
+## Configuring the Jenkins Pipeline
+
+After installing Jenkins I created a new freestyle project and began selecting settings for 
 
 
+## Creating the Windows Service
+
+## Writing the Deployment Script
 
 ```XML
 <?xml version='1.1' encoding='UTF-8'?>
