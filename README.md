@@ -32,10 +32,41 @@ Before heading over to Jenkins, I set the project up in source control by select
 
 ## Configuring the Jenkins Pipeline
 
-After installing Jenkins I created a new freestyle project. Inside the General section I selected the checkbox for GitHub project
+After installing Jenkins I created a new freestyle project. The first configuration I setup was for the GitHub project, selecting the options for GitHub under the general and SCM sections. I then started making the build steps.
 
+### Parameters
+
+### Build Steps
+
+The first step is building the entire solution. If this step fails, then there is a problem with either the unit test project or the main project.
+
+```
+dotnet build --configuration Release
+```
+
+The next step is to run the unit tests. If any tests fail then the pipeline fails.
+
+```
+dotnet test
+```
+
+The final step in the build is to publish the artifacts. In this case the .NET framework is bundled with the application from using the "self-contained" argument.
+
+```
+dotnet publish ProbablyFriends --configuration Release --runtime %RUNTIME% --self-contained
+```
+
+### Post-Build Steps
+
+```
+python Deploy.py "%WORKSPACE%\ProbablyFriends\bin\Release\net6.0\win-x64\publish" "%DEPLOY_TARGET_PATH%" "%DEPLOY_BACKUP_PATH%"
+```
 
 ## Creating the Windows Service
+
+```PowerShell
+New-Service -Name ProbablyFriends -BinaryPathName "C:\APPLICATIONS\ProbablyFriends\ProbablyFriends.exe" -Description "Probably Friends Web App" -DisplayName "Probably Friends" -StartupType Automatic
+```
 
 ## Writing the Deployment Script
 
@@ -62,6 +93,12 @@ After installing Jenkins I created a new freestyle project. Inside the General s
           <name>DEPLOY_BACKUP_PATH</name>
           <description>Backups of the application will go into this folder during deployment</description>
           <defaultValue>C:\APPLICATIONS\ProbablyFriendsBackups</defaultValue>
+          <trim>false</trim>
+        </hudson.model.StringParameterDefinition>
+        <hudson.model.StringParameterDefinition>
+          <name>RUNTIME</name>
+          <description>This parameter will be used when publishing artifacts. Example: for Ubuntu 18.04 &quot;ubuntu.18.04-x64&quot; or for Windows 64-bit &quot;win-x64&quot;.</description>
+          <defaultValue>win-x64</defaultValue>
           <trim>false</trim>
         </hudson.model.StringParameterDefinition>
       </parameterDefinitions>
@@ -99,7 +136,7 @@ After installing Jenkins I created a new freestyle project. Inside the General s
       <configuredLocalRules/>
     </hudson.tasks.BatchFile>
     <hudson.tasks.BatchFile>
-      <command>dotnet publish ProbablyFriends --configuration Release --runtime win-x64 --self-contained</command>
+      <command>dotnet publish ProbablyFriends --configuration Release --runtime %RUNTIME% --self-contained</command>
       <configuredLocalRules/>
     </hudson.tasks.BatchFile>
   </builders>
@@ -133,7 +170,7 @@ After installing Jenkins I created a new freestyle project. Inside the General s
             <stopOnFailure>true</stopOnFailure>
           </org.jenkinsci.plugins.postbuildscript.model.PostBuildStep>
         </buildSteps>
-        <markBuildUnstable>false</markBuildUnstable>
+        <markBuildUnstable>true</markBuildUnstable>
       </config>
     </org.jenkinsci.plugins.postbuildscript.PostBuildScript>
     <hudson.tasks.Mailer plugin="mailer@408.vd726a_1130320">
@@ -171,28 +208,36 @@ def run_deploy(source_path, target_path, backup_path):
 
     try:
         # Stop Service
+        print("Stopping service...")
         os.system("sc stop ProbablyFriends")
 
         # Create backup
+        print("Creating backup...")
         shutil.make_archive(os.path.join(
             backup_path, _backup_file_name), 'zip', target_path)
         
         # Zip artifacts and copy to target
+        print("Zipping artifacts and copying to target...")
         shutil.make_archive(
             os.path.join(target_path, _file_name), 'zip', source_path)
 
         # Unzip artifacts
+        print("Unpacking artifacts...")
         shutil.unpack_archive(os.path.join(
             target_path, f"{_file_name}.zip"), target_path)
 
         # Delete archive
+        print("Deleting archive...")
         os.remove(os.path.join(target_path, f"{_file_name}.zip"))
 
         # Start Service
+        print("Starting Service...")
         os.system("sc start ProbablyFriends")
 
     except:
         roll_back(target_path, backup_path)
+
+    print("Done!")
 
 
 def roll_back(target_path, backup_path):
