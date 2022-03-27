@@ -3,20 +3,20 @@ using System.Diagnostics;
 
 try
 {
-    var options = new WebApplicationOptions
+    WebApplicationOptions options = new WebApplicationOptions
     {
         Args = args,
         ContentRootPath = WindowsServiceHelpers.IsWindowsService() ? AppContext.BaseDirectory : default
     };
 
-    var builder = WebApplication.CreateBuilder(options);
+    WebApplicationBuilder builder = WebApplication.CreateBuilder(options);
 
     builder.Host.UseWindowsService();
 
     // Add services to the container.
     builder.Services.AddRazorPages();
 
-    var app = builder.Build();
+    WebApplication app = builder.Build();
 
     // Configure the HTTP request pipeline.
     if (!app.Environment.IsDevelopment())
