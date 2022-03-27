@@ -145,15 +145,20 @@ run_deploy(sys.argv[1], sys.argv[2], sys.argv[3])
 
 ### Email Notification on Build Failures
 
+I configued Jenkins to use Gmail's SMTP server. Upon any failures an email is sent out to my email address.
+
+![image](https://user-images.githubusercontent.com/47993107/160306441-3de6773c-5d17-438d-be41-0efde5b16f07.png)
 
 
 ## Creating the Windows Service
+
+I used the following PowerShell command to create a new Windows Service. By default Kestrel uses port 5000 to host the app.
 
 ```PowerShell
 New-Service -Name ProbablyFriends -BinaryPathName "C:\APPLICATIONS\ProbablyFriends\ProbablyFriends.exe" -Description "Probably Friends Web App" -DisplayName "Probably Friends" -StartupType Automatic
 ```
 
-## Writing the Deployment Script
+Below is the XML config file for the pipeline.
 
 ```XML
 <?xml version='1.1' encoding='UTF-8'?>
