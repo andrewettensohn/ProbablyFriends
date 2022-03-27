@@ -36,6 +36,21 @@ After installing Jenkins I created a new freestyle project. The first configurat
 
 ### Parameters
 
+This is a string parameter that is fed into the Python script that handles the deployment.
+```
+DEPLOY_TARGET_PATH
+```
+
+This is a string parameter that is also used in the deployment script for determining where backups of the last deploy should be stored.
+```
+DEPLOY_BACKUP_PATH
+```
+
+Another string parameter used as an argument for the runtime when publishing the web app.
+```
+RUNTIME
+```
+
 ### Build Steps
 
 The first step is building the entire solution. If this step fails, then there is a problem with either the unit test project or the main project.
@@ -50,7 +65,7 @@ The next step is to run the unit tests. If any tests fail then the pipeline fail
 dotnet test
 ```
 
-The final step in the build is to publish the artifacts. In this case the .NET framework is bundled with the application from using the "self-contained" argument.
+The final step in the build is to publish the artifacts. In this case the .NET framework is bundled with the application using the "self-contained" argument.
 
 ```
 dotnet publish ProbablyFriends --configuration Release --runtime %RUNTIME% --self-contained
@@ -58,9 +73,79 @@ dotnet publish ProbablyFriends --configuration Release --runtime %RUNTIME% --sel
 
 ### Post-Build Steps
 
+Following a successful build the deployment script will kick off using the below command.
+
 ```
 python Deploy.py "%WORKSPACE%\ProbablyFriends\bin\Release\net6.0\win-x64\publish" "%DEPLOY_TARGET_PATH%" "%DEPLOY_BACKUP_PATH%"
 ```
+
+Below are the contents of the deployment script. The script will stop the Windows service that hosts the web app, create a backup, move the artifacts to the target folder, and then start the service back up. If an exception occurs during the deployment then a roll back will occur and restore the app to the backup.
+
+```Python
+import datetime
+import shutil
+import os
+import sys
+
+_current_time = datetime.datetime.now()
+_file_time_stamp = f"{_current_time.year}-{_current_time.hour}-{_current_time.minute}-{_current_time.second}"
+_file_name = f"deployment-{_file_time_stamp}"
+_backup_file_name = f'backup-{_file_time_stamp}'
+
+
+def run_deploy(source_path, target_path, backup_path):
+    print(f"Running deploy for target path: {target_path}")
+
+    try:
+        # Stop Service
+        print("Stopping service...")
+        os.system("sc stop ProbablyFriends")
+
+        # Create backup
+        print("Creating backup...")
+        shutil.make_archive(os.path.join(
+            backup_path, _backup_file_name), 'zip', target_path)
+        
+        # Zip artifacts and copy to target
+        print("Zipping artifacts and copying to target...")
+        shutil.make_archive(
+            os.path.join(target_path, _file_name), 'zip', source_path)
+
+        # Unzip artifacts
+        print("Unpacking artifacts...")
+        shutil.unpack_archive(os.path.join(
+            target_path, f"{_file_name}.zip"), target_path)
+
+        # Delete archive
+        print("Deleting archive...")
+        os.remove(os.path.join(target_path, f"{_file_name}.zip"))
+
+        # Start Service
+        print("Starting Service...")
+        os.system("sc start ProbablyFriends")
+
+    except:
+        roll_back(target_path, backup_path)
+
+    print("Done!")
+
+
+def roll_back(target_path, backup_path):
+    print(f"An Exception occured. Rolling back deploy.")
+    os.remove(target_path)
+    os.write(target_path, 'x')
+    shutil.unpack_archive(os.path.join(
+        backup_path, f"{_backup_file_name}.zip"), target_path)
+
+
+run_deploy(sys.argv[1], sys.argv[2], sys.argv[3])
+
+```
+
+
+### Email Notification on Build Failures
+
+
 
 ## Creating the Windows Service
 
@@ -188,66 +273,4 @@ New-Service -Name ProbablyFriends -BinaryPathName "C:\APPLICATIONS\ProbablyFrien
     </hudson.plugins.build__timeout.BuildTimeoutWrapper>
   </buildWrappers>
 </project>
-```
-
-
-```Python
-import datetime
-import shutil
-import os
-import sys
-
-_current_time = datetime.datetime.now()
-_file_time_stamp = f"{_current_time.year}-{_current_time.hour}-{_current_time.minute}-{_current_time.second}"
-_file_name = f"deployment-{_file_time_stamp}"
-_backup_file_name = f'backup-{_file_time_stamp}'
-
-
-def run_deploy(source_path, target_path, backup_path):
-    print(f"Running deploy for target path: {target_path}")
-
-    try:
-        # Stop Service
-        print("Stopping service...")
-        os.system("sc stop ProbablyFriends")
-
-        # Create backup
-        print("Creating backup...")
-        shutil.make_archive(os.path.join(
-            backup_path, _backup_file_name), 'zip', target_path)
-        
-        # Zip artifacts and copy to target
-        print("Zipping artifacts and copying to target...")
-        shutil.make_archive(
-            os.path.join(target_path, _file_name), 'zip', source_path)
-
-        # Unzip artifacts
-        print("Unpacking artifacts...")
-        shutil.unpack_archive(os.path.join(
-            target_path, f"{_file_name}.zip"), target_path)
-
-        # Delete archive
-        print("Deleting archive...")
-        os.remove(os.path.join(target_path, f"{_file_name}.zip"))
-
-        # Start Service
-        print("Starting Service...")
-        os.system("sc start ProbablyFriends")
-
-    except:
-        roll_back(target_path, backup_path)
-
-    print("Done!")
-
-
-def roll_back(target_path, backup_path):
-    print(f"An Exception occured. Rolling back deploy.")
-    os.remove(target_path)
-    os.write(target_path, 'x')
-    shutil.unpack_archive(os.path.join(
-        backup_path, f"{_backup_file_name}.zip"), target_path)
-
-
-run_deploy(sys.argv[1], sys.argv[2], sys.argv[3])
-
 ```
