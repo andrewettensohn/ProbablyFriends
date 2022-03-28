@@ -158,7 +158,7 @@ I used the following PowerShell command to create a new Windows Service. By defa
 New-Service -Name ProbablyFriends -BinaryPathName "C:\APPLICATIONS\ProbablyFriends\ProbablyFriends.exe" -Description "Probably Friends Web App" -DisplayName "Probably Friends" -StartupType Automatic
 ```
 
-Below is the XML config file for the pipeline.
+## Job Config File
 
 ```XML
 <?xml version='1.1' encoding='UTF-8'?>
