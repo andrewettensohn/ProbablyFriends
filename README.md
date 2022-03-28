@@ -1,5 +1,5 @@
 # ProbablyFriends
-This is an example project that is used with a Jenkins pipeline I setup. Thanks for checking it out!
+This is an example project that uses a Jenkins pipeline I setup. Thanks for checking it out!
 
 ## Overview
 
