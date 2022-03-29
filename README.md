@@ -145,10 +145,11 @@ run_deploy(sys.argv[1], sys.argv[2], sys.argv[3])
 
 ### Email Notification on Build Failures
 
-I configued Jenkins to use Gmail's SMTP server. Upon any failures an email is sent out to my email address.
+I configued Jenkins to use Gmail's SMTP server. Upon any failures an email is sent out to my email address with the console output attached and another email is sent out following a succesful build after a failure.
 
-![image](https://user-images.githubusercontent.com/47993107/160306441-3de6773c-5d17-438d-be41-0efde5b16f07.png)
+![image](https://user-images.githubusercontent.com/47993107/160706026-a093c09d-d804-46d4-919d-13cb926d45f9.png)
 
+![image](https://user-images.githubusercontent.com/47993107/160706189-982c75ba-7083-44fe-9dd6-ed1faf5c4c84.png)
 
 ## Creating the Windows Service
 
@@ -158,124 +159,50 @@ I used the following PowerShell command to create a new Windows Service. By defa
 New-Service -Name ProbablyFriends -BinaryPathName "C:\APPLICATIONS\ProbablyFriends\ProbablyFriends.exe" -Description "Probably Friends Web App" -DisplayName "Probably Friends" -StartupType Automatic
 ```
 
-## Job Config File
+## Pipeline Script
 
-```XML
-<?xml version='1.1' encoding='UTF-8'?>
-<project>
-  <actions/>
-  <description>Build pipeline for ProbablyFriends site.</description>
-  <keepDependencies>false</keepDependencies>
-  <properties>
-    <com.coravy.hudson.plugins.github.GithubProjectProperty plugin="github@1.34.3">
-      <projectUrl>https://github.com/andrewettensohn/ProbablyFriends/</projectUrl>
-      <displayName></displayName>
-    </com.coravy.hudson.plugins.github.GithubProjectProperty>
-    <hudson.model.ParametersDefinitionProperty>
-      <parameterDefinitions>
-        <hudson.model.StringParameterDefinition>
-          <name>DEPLOY_TARGET_PATH</name>
-          <description>The target path that the application will be deployed to.</description>
-          <defaultValue>C:\APPLICATIONS\ProbablyFriends</defaultValue>
-          <trim>false</trim>
-        </hudson.model.StringParameterDefinition>
-        <hudson.model.StringParameterDefinition>
-          <name>DEPLOY_BACKUP_PATH</name>
-          <description>Backups of the application will go into this folder during deployment</description>
-          <defaultValue>C:\APPLICATIONS\ProbablyFriendsBackups</defaultValue>
-          <trim>false</trim>
-        </hudson.model.StringParameterDefinition>
-        <hudson.model.StringParameterDefinition>
-          <name>RUNTIME</name>
-          <description>This parameter will be used when publishing artifacts. Example: for Ubuntu 18.04 &quot;ubuntu.18.04-x64&quot; or for Windows 64-bit &quot;win-x64&quot;.</description>
-          <defaultValue>win-x64</defaultValue>
-          <trim>false</trim>
-        </hudson.model.StringParameterDefinition>
-      </parameterDefinitions>
-    </hudson.model.ParametersDefinitionProperty>
-  </properties>
-  <scm class="hudson.plugins.git.GitSCM" plugin="git@4.10.3">
-    <configVersion>2</configVersion>
-    <userRemoteConfigs>
-      <hudson.plugins.git.UserRemoteConfig>
-        <url>https://github.com/andrewettensohn/ProbablyFriends</url>
-      </hudson.plugins.git.UserRemoteConfig>
-    </userRemoteConfigs>
-    <branches>
-      <hudson.plugins.git.BranchSpec>
-        <name>*/master</name>
-      </hudson.plugins.git.BranchSpec>
-    </branches>
-    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
-    <submoduleCfg class="empty-list"/>
-    <extensions/>
-  </scm>
-  <canRoam>true</canRoam>
-  <disabled>false</disabled>
-  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
-  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
-  <triggers/>
-  <concurrentBuild>false</concurrentBuild>
-  <builders>
-    <hudson.tasks.BatchFile>
-      <command>dotnet build --configuration Release</command>
-      <configuredLocalRules/>
-    </hudson.tasks.BatchFile>
-    <hudson.tasks.BatchFile>
-      <command>dotnet test</command>
-      <configuredLocalRules/>
-    </hudson.tasks.BatchFile>
-    <hudson.tasks.BatchFile>
-      <command>dotnet publish ProbablyFriends --configuration Release --runtime %RUNTIME% --self-contained</command>
-      <configuredLocalRules/>
-    </hudson.tasks.BatchFile>
-  </builders>
-  <publishers>
-    <hudson.tasks.ArtifactArchiver>
-      <artifacts>ProbablyFriends/bin/Release/net6.0/**/*</artifacts>
-      <allowEmptyArchive>false</allowEmptyArchive>
-      <onlyIfSuccessful>false</onlyIfSuccessful>
-      <fingerprint>false</fingerprint>
-      <defaultExcludes>true</defaultExcludes>
-      <caseSensitive>true</caseSensitive>
-      <followSymlinks>false</followSymlinks>
-    </hudson.tasks.ArtifactArchiver>
-    <org.jenkinsci.plugins.postbuildscript.PostBuildScript plugin="postbuildscript@3.1.0-375.v3db_cd92485e1">
-      <config>
-        <scriptFiles/>
-        <groovyScripts/>
-        <buildSteps>
-          <org.jenkinsci.plugins.postbuildscript.model.PostBuildStep>
-            <results>
-              <string>SUCCESS</string>
-            </results>
-            <role>BOTH</role>
-            <executeOn>BOTH</executeOn>
-            <buildSteps>
-              <hudson.tasks.BatchFile>
-                <command>python Deploy.py &quot;%WORKSPACE%\ProbablyFriends\bin\Release\net6.0\win-x64\publish&quot; &quot;%DEPLOY_TARGET_PATH%&quot; &quot;%DEPLOY_BACKUP_PATH%&quot;</command>
-                <configuredLocalRules/>
-              </hudson.tasks.BatchFile>
-            </buildSteps>
-            <stopOnFailure>true</stopOnFailure>
-          </org.jenkinsci.plugins.postbuildscript.model.PostBuildStep>
-        </buildSteps>
-        <markBuildUnstable>true</markBuildUnstable>
-      </config>
-    </org.jenkinsci.plugins.postbuildscript.PostBuildScript>
-    <hudson.tasks.Mailer plugin="mailer@408.vd726a_1130320">
-      <recipients>andrewettensohn@gmail.com</recipients>
-      <dontNotifyEveryUnstableBuild>false</dontNotifyEveryUnstableBuild>
-      <sendToIndividuals>false</sendToIndividuals>
-    </hudson.tasks.Mailer>
-  </publishers>
-  <buildWrappers>
-    <hudson.plugins.build__timeout.BuildTimeoutWrapper plugin="build-timeout@1.20">
-      <strategy class="hudson.plugins.build_timeout.impl.AbsoluteTimeOutStrategy">
-        <timeoutMinutes>5</timeoutMinutes>
-      </strategy>
-      <operationList/>
-    </hudson.plugins.build__timeout.BuildTimeoutWrapper>
-  </buildWrappers>
-</project>
+```GROOVY
+pipeline {
+    agent any
+
+    stages {
+        stage('Clone Sources') {
+            steps {
+                git url: 'https://github.com/andrewettensohn/ProbablyFriends.git'
+            }
+        }
+        stage('Build') {
+            steps {
+                bat 'dotnet build --configuration Release'
+
+                bat 'dotnet test'
+
+                bat 'dotnet publish ProbablyFriends --configuration Release --runtime %RUNTIME% --self-contained'
+
+                archiveArtifacts artifacts: 'ProbablyFriends/bin/Release/net6.0/**/*', followSymlinks: false
+            }
+        }
+        stage('Deploy') {
+            steps {
+                bat 'python Deploy.py "%WORKSPACE%\\ProbablyFriends\\bin\\Release\\net6.0\\win-x64\\publish" "%DEPLOY_TARGET_PATH%" "%DEPLOY_BACKUP_PATH%"'
+            }
+        }
+    }
+    post {
+        failure {
+            emailext attachLog: true,
+             to: 'andrewettensohn@gmail.com',
+             body: 'The console output of the job has been attached to this email. Build URL: ${BUILD_URL}',
+             subject: 'Build failed in Jenkins: Probably Friends ${BUILD_NUMBER}'
+        }
+        fixed {
+            emailext attachLog: false,
+            to: 'andrewettensohn@gmail.com',
+            body: 'Build URL: ${BUILD_URL}',
+            subject: 'Jenkins build is back to normal: Probably Friends ${BUILD_NUMBER}'
+        }
+    }
+}
+
+
 ```
