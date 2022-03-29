@@ -32,7 +32,7 @@ Before heading over to Jenkins, I set the project up in source control by select
 
 ## Configuring the Jenkins Pipeline
 
-After installing Jenkins I created a new freestyle project. The first configuration I setup was for the GitHub project, selecting the options for GitHub under the general and SCM sections. I then started making the build steps.
+After installing Jenkins I created a new Pipeline project. The first configuration I setup was for the GitHub project, selecting the options for GitHub under the general. I then started making the build steps.
 
 ### Parameters
 
