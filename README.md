@@ -3,7 +3,7 @@ This is an example project that uses a Jenkins pipeline I setup. Thanks for chec
 
 ## Overview
 
-The details of the Jenkins pipeline are documented in this readme along with steps to recreate the work I've done. This repository contains a simple ASP .NET 6 web application with Razor pages and a unit test project. The configuration for the Jenkins pipeline is listed below as an XML code block along with a deployment script written in Python.
+The details of the Jenkins pipeline are documented in this readme along with steps to recreate the work I've done. This repository contains a simple ASP .NET 6 web application with Razor pages and a unit test project. The script for the Jenkins pipeline is listed at the bottom of this README in a code block along with a deployment script written in Python.
 
 ## Setting up the .NET Project
 
